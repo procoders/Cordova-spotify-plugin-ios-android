@@ -44,6 +44,7 @@ public class SpotifyPlugin extends CordovaPlugin implements
     private static final String ACTION_PLAY = "play";
     private static final String ACTION_PAUSE = "pause";
     private static final String ACTION_RESUME = "resume";
+    private static final String ACTION_PAUSE_TOGGLE = "pauseToggle";
     private static final String ACTION_NEXT = "next";
     private static final String ACTION_PREV = "prev";
     private static final String ACTION_PLAY_ALBUM = "playAlbum";
@@ -84,7 +85,7 @@ public class SpotifyPlugin extends CordovaPlugin implements
 
         Log.i(TAG, "cb ID ID" + cbResId);
 
-        redirectUri = cordova.getActivity().getString(cbResId) + "://callback";
+        redirectUri = cordova.getActivity().getString(cbResId) + "://spotify-callback";
 
         Log.i(TAG, "Set up local vars" + clientId + redirectUri);
         super.initialize(cordova, webView);
@@ -144,7 +145,10 @@ public class SpotifyPlugin extends CordovaPlugin implements
             this.pause();
             success = true;
         } else if (ACTION_RESUME.equalsIgnoreCase(action)) {
-            // this.resume();
+            this.resume();
+            success = true;
+        } else if (ACTION_PAUSE_TOGGLE.equalsIgnoreCase(action)) {
+            this.pauseToggle();
             success = true;
         } else if (ACTION_NEXT.equalsIgnoreCase(action)) {
             this.next();
@@ -322,7 +326,7 @@ public class SpotifyPlugin extends CordovaPlugin implements
 
     private void login(String val) {
         clientId = val;
-        final AuthenticationRequest request = new AuthenticationRequest.Builder(clientId, AuthenticationResponse.Type.TOKEN, redirectUri)
+        final AuthenticationRequest request = new AuthenticationRequest.Builder(clientId, AuthenticationResponse.Type.CODE, redirectUri)
                 .setScopes(new String[]{"user-read-private", "playlist-read", "playlist-read-private", "user-read-email", "streaming"})
                 .build();
         AuthenticationClient.openLoginActivity(cordova.getActivity(), REQUEST_CODE, request);
@@ -387,15 +391,32 @@ public class SpotifyPlugin extends CordovaPlugin implements
     }
 
 
-    private void pause() {
-        // if (clientId == null || isLoggedIn == false || currentAccessToken == null || currentPlayer == null)
-        //     return;
+    private void pauseToggle() {
         if (currentPlayer.getPlaybackState().isPlaying) {
             currentPlayer.pause(mOperationCallback);
         } else {
             currentPlayer.resume(mOperationCallback);
         }
     }
+
+    private void pause() {
+        if (currentPlayer.getPlaybackState().isPlaying) {
+            currentPlayer.pause(mOperationCallback);
+        }
+    }
+
+    private void resume() {
+        if (!currentPlayer.getPlaybackState().isPlaying) {
+            currentPlayer.resume(mOperationCallback);
+        }
+    }
+
+    @Override
+    public void onDestroy () {
+        Log.d(TAG, "Spotify plugin onDestroy. Try to pause");
+        this.pause();
+        super.onDestroy ();
+    };
 
     /*
      private void resume() {
@@ -411,6 +432,7 @@ public class SpotifyPlugin extends CordovaPlugin implements
         Log.i(TAG, "Result Code " + resultCode);
 
         JSONObject ret = new JSONObject();
+        JSONArray array1 = new JSONArray();
 
 // Check if result comes from the correct activity
         if (requestCode == REQUEST_CODE) {
@@ -421,7 +443,6 @@ public class SpotifyPlugin extends CordovaPlugin implements
                     Log.i(TAG, "TOKEN " + response.getAccessToken());
                     currentAccessToken = response.getAccessToken();
                     onAuthenticationComplete(response);
-                    JSONArray array1 = new JSONArray();
                     array1.put("logged in");
                     sendUpdate("onLogedIn", new Object[]{array1});
 
@@ -429,7 +450,9 @@ public class SpotifyPlugin extends CordovaPlugin implements
                 case CODE:
                     isLoggedIn = false;
                     Log.i(TAG, "RECEIVED CODE" + response.getCode());
-
+                    currentAccessToken = response.getCode();
+                    array1.put("RECEIVED in code");
+                    sendUpdate("onLogedIn", new Object[]{array1});
                     try {
                         ret.put("authCode", response.getCode());
                     } catch (JSONException e) {
@@ -535,13 +558,6 @@ public class SpotifyPlugin extends CordovaPlugin implements
         Log.d("MainActivity", "Received connection message: " + message);
     }
 
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-    }
-
-
     private static final String EVENT_AUDIO_FLASH = "kSpPlaybackEventAudioFlush";
 
     private static final String EVENT_DELIVERY_DOUN = "kSpPlaybackNotifyAudioDeliveryDone";
@@ -600,13 +616,17 @@ public class SpotifyPlugin extends CordovaPlugin implements
 
         } else if (playerEvent.name().equals(EVENT_METADATA_CHANGED)) {
             Log.d(TAG, "player metadata changed" + mMetaData);
-            array.put(mMetaData.currentTrack.name);
-            array.put(mMetaData.currentTrack.artistName);
-            array.put(mMetaData.currentTrack.albumName);
-            array.put(mMetaData.currentTrack.durationMs);
+            if (mMetaData != null) {
+                array.put(mMetaData.currentTrack.name);
+                array.put(mMetaData.currentTrack.artistName);
+                array.put(mMetaData.currentTrack.albumName);
+                array.put(mMetaData.currentTrack.durationMs);
 
-            sendUpdate("onMetadataChanged", new Object[]{array});
-
+                sendUpdate("onMetadataChanged", new Object[]{array});
+            } else {
+                JSONArray arrayError = new JSONArray();
+                sendUpdate("onPlayError", new Object[]{arrayError});
+            }
         } else if (playerEvent.name().equals(EVENT_CONTEXT_CHANGED)) {
             Log.d(TAG, "player context changed " + mMetaData.contextName);
         } else if (playerEvent.name().equals(EVENT_DELIVERY_DOUN)) {
@@ -682,6 +702,4 @@ public class SpotifyPlugin extends CordovaPlugin implements
         });
 
     }
-
-
 }
