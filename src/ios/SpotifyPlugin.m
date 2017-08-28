@@ -174,7 +174,17 @@
 }
 -(void)pause:(CDVInvokedUrlCommand*)command
 {
-    NSLog(@"SpotifyPlayer action play/pause");
+    NSLog(@"SpotifyPlayer action pause");
+    [self.player setIsPlaying:FALSE callback:nil];
+}
+-(void)resume:(CDVInvokedUrlCommand*)command
+{
+    NSLog(@"SpotifyPlayer action resume");
+    [self.player setIsPlaying:TRUE callback:nil];
+}
+-(void)pauseToggle:(CDVInvokedUrlCommand*)command
+{
+    NSLog(@"SpotifyPlayer action resume");
     [self.player setIsPlaying:!self.player.playbackState.isPlaying callback:nil];
 }
 -(void)next:(CDVInvokedUrlCommand*)command
