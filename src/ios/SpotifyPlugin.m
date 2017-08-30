@@ -360,7 +360,7 @@
     [str appendFormat:@"%f)",position*1000];
     
     [self.commandDelegate evalJs:str];
-    NSLog(@"SpotifyPlugin: %@",str);
+    // NSLog(@"SpotifyPlugin: %@",str);
 }
 -(void)audioStreaming:(SPTAudioStreamingController *)audioStreaming didChangeVolume:(SPTVolume)volume
 {
