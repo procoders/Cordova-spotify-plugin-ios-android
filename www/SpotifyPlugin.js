@@ -39,6 +39,15 @@ module.exports = {
                      []
                      )
     },
+    resume : function(){
+        exec(
+                     function(){},
+                     function(){},
+                     "SpotifyPlugin",
+                     "resume",
+                     []
+                     )
+    },    
     next : function(){
         exec(
                      function(){},
