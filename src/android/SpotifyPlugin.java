@@ -31,6 +31,10 @@ import com.spotify.sdk.android.player.ConnectionStateCallback;
 import com.spotify.sdk.android.player.Player;
 import com.spotify.sdk.android.player.SpotifyPlayer;
 
+import android.media.AudioManager;
+import android.media.AudioManager.OnAudioFocusChangeListener;
+
+
 /**
  * Created by Aleksey on 10/10/2016.
  */
@@ -91,7 +95,47 @@ public class SpotifyPlugin extends CordovaPlugin implements
         super.initialize(cordova, webView);
 
 
+        AudioManager am = (AudioManager) this.cordova.getActivity().getSystemService(Context.AUDIO_SERVICE);
+        int result = am.requestAudioFocus(focusChangeListener,
+                AudioManager.STREAM_MUSIC,
+                AudioManager.AUDIOFOCUS_GAIN);
+
+        if (result != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+            Log.e(TAG,result + " instead of " + AudioManager.AUDIOFOCUS_REQUEST_GRANTED);
+        }
     }
+
+
+    /**
+     * Get the the audio focus
+     */
+    private OnAudioFocusChangeListener focusChangeListener = new OnAudioFocusChangeListener() {
+        public void onAudioFocusChange(int focusChange) {
+            switch (focusChange) {
+                case (AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) :
+                    Log.i(TAG, "AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK");
+                    break;
+                case (AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) :
+                    Log.i(TAG, "AUDIOFOCUS_LOSS_TRANSIENT");
+                    break;
+                case (AudioManager.AUDIOFOCUS_LOSS) :
+                    Log.i(TAG, "AUDIOFOCUS_LOSS");
+                    if (currentPlayer.getPlaybackState().isPlaying) {
+                        currentPlayer.pause(mOperationCallback);
+                    }
+                    break;
+                case (AudioManager.AUDIOFOCUS_GAIN):
+                    Log.i(TAG, "AUDIOFOCUS_GAIN");
+                    if (!currentPlayer.getPlaybackState().isPlaying) {
+                        currentPlayer.resume(mOperationCallback);
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+    };
+
 
     @Override
     public boolean execute(String action, JSONArray data, CallbackContext callbackContext) {
@@ -616,7 +660,7 @@ public class SpotifyPlugin extends CordovaPlugin implements
 
         } else if (playerEvent.name().equals(EVENT_METADATA_CHANGED)) {
             Log.d(TAG, "player metadata changed" + mMetaData);
-            if (mMetaData != null) {
+            if (mMetaData != null && mMetaData.currentTrack != null) {
                 array.put(mMetaData.currentTrack.name);
                 array.put(mMetaData.currentTrack.artistName);
                 array.put(mMetaData.currentTrack.albumName);
