@@ -1,16 +1,14 @@
 //
 //  SpotifyPlugin.m
 //
-//#define kTokenSwapServiceURL "http://5.9.24.144:1039/swap"
 
 // The URL to your token refresh endpoint
 // If you don't provide a token refresh service url, the user will need to sign in again every time their token expires.
 
-//#define kTokenRefreshServiceURL "http://5.9.24.144:1039/refresh"
-
 
 #define kSessionUserDefaultsKey "SpotifySession"
 
+#import <AVFoundation/AVFoundation.h>
 
 #import "SpotifyPlugin.h"
 
@@ -23,6 +21,8 @@
 
 @implementation SpotifyPlugin
 
+static bool _selfPlaying = false;
+
 - (void)myPluginMethod:(CDVInvokedUrlCommand*)command
 {
     // Check command.arguments here.
@@ -31,6 +31,29 @@
 {
     self = [super init];
 }
+-(void)audioSessionInterruptionNotification:(NSNotification*)notification {
+    
+    if (! _selfPlaying)
+        return;
+    
+    //Check the type of notification, especially if you are sending multiple AVAudioSession events here
+    NSLog(@"Interruption notification name %@", notification.name);
+    
+    if ([notification.name isEqualToString:AVAudioSessionInterruptionNotification]) {
+        //Check to see if it was a Begin interruption
+        if ([[notification.userInfo valueForKey:AVAudioSessionInterruptionTypeKey] isEqualToNumber:[NSNumber numberWithInt:AVAudioSessionInterruptionTypeBegan]]) {
+            NSLog(@"SpotifyPlugin Interruption began!");
+            [self.player setIsPlaying:FALSE callback:nil];
+            
+        } else if([[notification.userInfo valueForKey:AVAudioSessionInterruptionTypeKey] isEqualToNumber:[NSNumber numberWithInt:AVAudioSessionInterruptionTypeEnded]]){
+            //Resume your audio
+            NSLog(@"SpotifyPlugin Interruption ended!");
+            [self.player setIsPlaying:TRUE callback:nil];
+
+        }
+    }
+}
+
 -(void)login :(CDVInvokedUrlCommand*)command
 {
     
@@ -155,6 +178,7 @@
 }
 -(void)play:(CDVInvokedUrlCommand*)command
 {
+    _selfPlaying = true;
     NSMutableString *str = [NSMutableString stringWithString:@"window.cordova.plugins.SpotifyPlugin.Events.onPlayError(['"];
    
     NSString * str1 = [command.arguments objectAtIndex:0];
@@ -171,19 +195,33 @@
             return;
         }
     }];
+
+    NSError *error;
+    AVAudioSession *aSession = [AVAudioSession sharedInstance];
+    [aSession setCategory:AVAudioSessionCategoryPlayback withOptions:AVAudioSessionCategoryOptionAllowBluetooth error:&error];
+    [aSession setMode:AVAudioSessionModeDefault error:&error];
+    [aSession setActive: YES error: &error];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(audioSessionInterruptionNotification:)
+                                                 name:AVAudioSessionInterruptionNotification
+                                               object:aSession];
 }
 -(void)pause:(CDVInvokedUrlCommand*)command
 {
+    _selfPlaying = false;
     NSLog(@"SpotifyPlayer action pause");
     [self.player setIsPlaying:FALSE callback:nil];
 }
 -(void)resume:(CDVInvokedUrlCommand*)command
 {
+    _selfPlaying = true;
     NSLog(@"SpotifyPlayer action resume");
     [self.player setIsPlaying:TRUE callback:nil];
 }
 -(void)pauseToggle:(CDVInvokedUrlCommand*)command
 {
+    _selfPlaying = self.player.playbackState.isPlaying;
     NSLog(@"SpotifyPlayer action resume");
     [self.player setIsPlaying:!self.player.playbackState.isPlaying callback:nil];
 }
