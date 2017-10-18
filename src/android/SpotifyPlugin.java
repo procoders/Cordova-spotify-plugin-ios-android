@@ -62,6 +62,8 @@ public class SpotifyPlugin extends CordovaPlugin implements
     private static final String ACTION_GET_TOKEN = "getToken";
     private static final int REQUEST_CODE = 1337;
 
+    private static Boolean _selfPlaying = false;
+
     private String clientId;// ="4eb7b5c08bee4d759d34dbc1823fd7c5";
     private String redirectUri;// = "testshema://callback";
 
@@ -77,6 +79,7 @@ public class SpotifyPlugin extends CordovaPlugin implements
 
     private CordovaWebView mWebView;
     private CordovaInterface mInterface;
+
 
     @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
@@ -120,13 +123,13 @@ public class SpotifyPlugin extends CordovaPlugin implements
                     break;
                 case (AudioManager.AUDIOFOCUS_LOSS) :
                     Log.i(TAG, "AUDIOFOCUS_LOSS");
-                    if (currentPlayer.getPlaybackState().isPlaying) {
+                    if (_selfPlaying && currentPlayer.getPlaybackState().isPlaying) {
                         currentPlayer.pause(mOperationCallback);
                     }
                     break;
                 case (AudioManager.AUDIOFOCUS_GAIN):
                     Log.i(TAG, "AUDIOFOCUS_GAIN");
-                    if (!currentPlayer.getPlaybackState().isPlaying) {
+                    if (_selfPlaying && !currentPlayer.getPlaybackState().isPlaying) {
                         currentPlayer.resume(mOperationCallback);
                     }
                     break;
@@ -430,6 +433,7 @@ public class SpotifyPlugin extends CordovaPlugin implements
         }
 
         Log.i(TAG, "Playing URI: " + uri);
+        _selfPlaying = true;
 
         currentPlayer.playUri(mOperationCallback, uri, 0, 0);
     }
@@ -437,20 +441,24 @@ public class SpotifyPlugin extends CordovaPlugin implements
 
     private void pauseToggle() {
         if (currentPlayer.getPlaybackState().isPlaying) {
+            _selfPlaying = false;
             currentPlayer.pause(mOperationCallback);
         } else {
+            _selfPlaying = true;
             currentPlayer.resume(mOperationCallback);
         }
     }
 
     private void pause() {
         if (currentPlayer.getPlaybackState().isPlaying) {
+            _selfPlaying = false;
             currentPlayer.pause(mOperationCallback);
         }
     }
 
     private void resume() {
         if (!currentPlayer.getPlaybackState().isPlaying) {
+            _selfPlaying = true;
             currentPlayer.resume(mOperationCallback);
         }
     }
