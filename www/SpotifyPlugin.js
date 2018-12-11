@@ -1,5 +1,5 @@
 var exec = require('cordova/exec');
-               
+
 module.exports = {
     login : function(a,b,url) {
         let swap = url+'/swap';
@@ -47,7 +47,7 @@ module.exports = {
                      "resume",
                      []
                      )
-    },    
+    },
     next : function(){
         exec(
                      function(){},
@@ -140,16 +140,14 @@ module.exports = {
             //arg - volume betwen 0.0 ....1.0
         },
          onLogedIn :function(arg){
-            alert(arg);
+            //alert(arg);
         },
         onDidNotLogin:function(arg){
-            alert(arg);
+            // alert(arg);
         },
         onPlayError :function(error){
-            alert(error[0]);//error[0] - error message
+            // alert(error[0]);//error[0] - error message
         }
-        
     }
-    
 };
 
