@@ -1,4 +1,4 @@
-[![N|Solid](http://procoders.tech/art/powered.png)](http://procoders.tech/)
+[![N|Solid](https://www.procoders.tech/art/powered.png)](http://procoders.tech/)
 
 # Cordova Spotify Plugin
 This plugin included all main functions of audio player for Spotify servise :smirk:
@@ -143,7 +143,10 @@ Spotify.Events.onPlayError = function(error){};
 > *error[0]*  - error message
     
 ### Authors
- - Aleksey Stepanets
+
+[Procoders.TECH](https://procoders.tech)
+
+We gear IT up!
 
 
-[![N|Solid](http://procoders.tech/art/powered.png)](http://procoders.tech/)
+[![N|Solid](https://www.procoders.tech/art/powered.png)](http://procoders.tech/)
